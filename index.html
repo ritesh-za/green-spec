@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Todo Pilot — Plan, track, and ship without leaving VS Code</title>
+<meta name="description" content="Todo Pilot is a VS Code extension for managing tasks with priority tracking, code TODO scanning, team collaboration, and GitHub Copilot integration." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%2316a34a'/%3E%3Cpath d='M18 33l9 9 19-19' stroke='white' stroke-width='6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+<style>
+  :root {
+    --bg: #ffffff;
+    --fg: #0f172a;
+    --muted: #475569;
+    --border: #e2e8f0;
+    --card: #f8fafc;
+    --brand: #16a34a;
+    --brand-dark: #15803d;
+    --accent: #0ea5e9;
+    --max: 1040px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--fg);
+    background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--brand-dark); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .wrap { max-width: var(--max); margin: 0 auto; padding: 0 20px; }
+
+  /* Header */
+  header.site {
+    border-bottom: 1px solid var(--border);
+    background: #fff;
+    position: sticky; top: 0; z-index: 10;
+  }
+  .nav { display: flex; align-items: center; justify-content: space-between; padding: 14px 0; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; color: var(--fg); }
+  .brand-mark {
+    width: 28px; height: 28px; border-radius: 6px;
+    background: var(--brand); color: #fff;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+  nav.links a { margin-left: 18px; color: var(--muted); font-weight: 500; }
+  nav.links a:hover { color: var(--fg); }
+
+  /* Hero */
+  .hero { padding: 64px 0 40px; }
+  .hero h1 { font-size: 44px; line-height: 1.15; margin: 0 0 16px; letter-spacing: -0.5px; }
+  .hero p.lead { font-size: 18px; color: var(--muted); max-width: 720px; margin: 0 0 28px; }
+  .cta-row { display: flex; gap: 12px; flex-wrap: wrap; }
+  .btn {
+    display: inline-block; padding: 12px 18px; border-radius: 8px;
+    font-weight: 600; cursor: pointer; border: 1px solid transparent;
+    transition: transform .04s ease, background .15s ease;
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn-primary { background: var(--brand); color: #fff; }
+  .btn-primary:hover { background: var(--brand-dark); text-decoration: none; }
+  .btn-secondary { background: #fff; color: var(--fg); border-color: var(--border); }
+  .btn-secondary:hover { background: var(--card); text-decoration: none; }
+
+  /* Sections */
+  section { padding: 56px 0; border-top: 1px solid var(--border); }
+  section h2 { font-size: 28px; margin: 0 0 20px; letter-spacing: -0.3px; }
+  section h3 { font-size: 18px; margin: 24px 0 8px; }
+  section p { color: var(--fg); }
+
+  /* Feature grid */
+  .grid {
+    display: grid; gap: 16px;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  }
+  .card {
+    border: 1px solid var(--border); background: var(--card);
+    border-radius: 10px; padding: 18px;
+  }
+  .card h3 { margin-top: 0; font-size: 16px; }
+  .card p { color: var(--muted); margin: 6px 0 0; font-size: 14px; }
+
+  /* Pricing */
+  .pricing { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+  .plan {
+    border: 1px solid var(--border); border-radius: 12px; padding: 22px;
+    background: #fff; display: flex; flex-direction: column;
+  }
+  .plan.featured { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(22,163,74,0.12); }
+  .plan h3 { margin: 0; font-size: 20px; }
+  .price { font-size: 32px; font-weight: 700; margin: 10px 0 4px; }
+  .price small { font-size: 14px; font-weight: 500; color: var(--muted); }
+  .plan ul { list-style: none; padding: 0; margin: 14px 0 18px; }
+  .plan li { padding: 6px 0; color: var(--fg); font-size: 14px; }
+  .plan li::before { content: "✓ "; color: var(--brand); font-weight: 700; }
+  .plan .btn { width: 100%; text-align: center; }
+
+  /* Legal */
+  .legal h2 { margin-top: 0; }
+  .legal p, .legal li { color: var(--muted); font-size: 14px; }
+  .legal ul { padding-left: 18px; }
+
+  footer { padding: 32px 0 56px; color: var(--muted); font-size: 13px; border-top: 1px solid var(--border); }
+  footer a { color: var(--muted); }
+  .muted { color: var(--muted); }
+  code.inline {
+    background: var(--card); border: 1px solid var(--border);
+    padding: 1px 6px; border-radius: 4px; font-size: 13px;
+  }
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap nav">
+    <a class="brand" href="#top">
+      <span class="brand-mark">✓</span>
+      <span>Todo Pilot</span>
+      <span class="muted" style="font-weight:400;">by Green Spec</span>
+    </a>
+    <nav class="links">
+      <a href="#features">Features</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#privacy">Privacy</a>
+      <a href="#terms">Terms</a>
+      <a href="#contact">Contact</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+
+  <!-- HERO -->
+  <section class="hero" style="border-top:0;">
+    <div class="wrap">
+      <h1>Plan, track, and ship — without leaving VS Code.</h1>
+      <p class="lead">
+        Todo Pilot is a VS Code extension that brings priority-driven task management,
+        in-editor TODO scanning, team collaboration, and GitHub Copilot integration
+        into your daily workflow. Your tasks live in your repo. No telemetry. Fully offline.
+      </p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="#pricing">See pricing</a>
+        <a class="btn btn-secondary"
+           href="https://marketplace.visualstudio.com/items?itemName=ritz-kooverjey.todo-pilot"
+           target="_blank" rel="noopener">
+          Install on VS Code Marketplace
+        </a>
+        <a class="btn btn-secondary"
+           href="https://github.com/ritesh-za/todo-pilot"
+           target="_blank" rel="noopener">
+          View on GitHub
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section id="features">
+    <div class="wrap">
+      <h2>What you get</h2>
+      <div class="grid">
+        <div class="card">
+          <h3>Priority-first task list</h3>
+          <p>P1 / P2 / P3 priorities, custom groups, drag-and-drop ordering, and a status bar widget.</p>
+        </div>
+        <div class="card">
+          <h3>Code TODO scanning</h3>
+          <p>Find <code class="inline">TODO</code>, <code class="inline">FIXME</code>, <code class="inline">HACK</code>, <code class="inline">NOTE</code>, <code class="inline">BUG</code> across your workspace and jump straight to the line.</p>
+        </div>
+        <div class="card">
+          <h3>Promote scan hits to tasks</h3>
+          <p>Right-click any code TODO and turn it into a tracked task with priority and group.</p>
+        </div>
+        <div class="card">
+          <h3>Team collaboration</h3>
+          <p>Each teammate's tasks live in their own JSON file in the repo — no merge conflicts, no central server.</p>
+        </div>
+        <div class="card">
+          <h3>GitHub Copilot integration</h3>
+          <p>Mention <code class="inline">@todopilot</code> in Copilot Chat or let Copilot agent mode add, list, and update tasks for you.</p>
+        </div>
+        <div class="card">
+          <h3>Fully offline</h3>
+          <p>No telemetry. No account. License keys verify locally — your data stays on your machine.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRICING -->
+  <section id="pricing">
+    <div class="wrap">
+      <h2>Pricing</h2>
+      <p class="muted" style="margin-top:0;">All prices in USD. One-time payment, includes 12 months of updates. Your installed version keeps working forever.</p>
+
+      <div class="pricing">
+
+        <div class="plan">
+          <h3>Free</h3>
+          <div class="price">$0</div>
+          <ul>
+            <li>Up to 50 active tasks</li>
+            <li>Up to 2 custom groups</li>
+            <li>Default scan tags</li>
+            <li>Copilot chat participant</li>
+            <li>Markdown export (basic)</li>
+          </ul>
+          <a class="btn btn-secondary"
+             href="https://marketplace.visualstudio.com/items?itemName=ritz-kooverjey.todo-pilot"
+             target="_blank" rel="noopener">Install free</a>
+        </div>
+
+        <div class="plan featured">
+          <h3>Pro</h3>
+          <div class="price">$50 <small>/ year</small></div>
+          <ul>
+            <li>Unlimited tasks &amp; groups</li>
+            <li>Custom scan tags</li>
+            <li>Scoped scan targets</li>
+            <li>Copilot agent tools</li>
+            <li>Custom Markdown templates</li>
+            <li>1 machine</li>
+          </ul>
+          <a class="btn btn-primary"
+             id="buy-pro"
+             href="#contact"
+             rel="noopener">Buy Pro</a>
+        </div>
+
+        <div class="plan">
+          <h3>Team</h3>
+          <div class="price">$100 <small>/ year</small></div>
+          <ul>
+            <li>Everything in Pro</li>
+            <li>Up to 3 machines</li>
+            <li>Priority email support</li>
+            <li>Shared workspace presets (planned)</li>
+            <li>Audit log of teammate changes (planned)</li>
+          </ul>
+          <a class="btn btn-secondary"
+             id="buy-team"
+             href="#contact"
+             rel="noopener">Buy Team</a>
+        </div>
+
+      </div>
+
+      <p class="muted" style="margin-top:24px;font-size:13px;">
+        Payments are processed by <strong>Paddle.com</strong>, our merchant of record.
+        Your receipt and invoice will come from Paddle.
+      </p>
+    </div>
+  </section>
+
+  <!-- HOW LICENSING WORKS -->
+  <section id="licensing">
+    <div class="wrap">
+      <h2>How licensing works</h2>
+      <p>
+        After purchase you'll receive a license key by email (format
+        <code class="inline">TP-PRO-XXXXX-XXXXX-XXXXX</code>). In VS Code, run
+        <strong>Todo Pilot: Enter License Key…</strong> and paste the key. Pro features
+        unlock immediately. Activation is fully offline — no network call, no telemetry.
+      </p>
+      <p>
+        Pro covers 1 machine; Team covers up to 3. To move machines, run
+        <strong>Todo Pilot: View Plan → Deactivate License</strong> on the old machine
+        and re-enter the key on the new one.
+      </p>
+    </div>
+  </section>
+
+  <!-- REFUND POLICY -->
+  <section id="refunds" class="legal">
+    <div class="wrap">
+      <h2>Refund policy</h2>
+      <p>
+        <strong>All sales are final. No refunds are offered.</strong>
+      </p>
+      <p>
+        Because Todo Pilot is a digital product that is delivered immediately and runs
+        fully offline once a license key is issued, we do not offer refunds, returns,
+        cancellations, or pro-rated reimbursements. Please use the
+        <strong>7-day Pro trial</strong> built into the extension before purchasing.
+      </p>
+      <p>
+        If your license key fails to activate due to a defect on our side, contact us
+        at <a href="mailto:sgreen.za@gmail.com">sgreen.za@gmail.com</a> and we will
+        reissue a working key.
+      </p>
+    </div>
+  </section>
+
+  <!-- TERMS -->
+  <section id="terms" class="legal">
+    <div class="wrap">
+      <h2>Terms of service</h2>
+      <p><em>Last updated: 6 May 2026.</em></p>
+
+      <h3>1. Who we are</h3>
+      <p>
+        Todo Pilot is operated by <strong>Green Spec</strong> ("we", "us"). By purchasing
+        or using Todo Pilot you agree to these terms.
+      </p>
+
+      <h3>2. License grant</h3>
+      <p>
+        A purchased license grants you a non-transferable, non-exclusive right to use
+        Todo Pilot on the number of machines specified by your plan (Pro: 1 machine;
+        Team: up to 3 machines). License keys may not be resold, sublicensed, or shared
+        outside the seats permitted by your plan.
+      </p>
+
+      <h3>3. Updates</h3>
+      <p>
+        Each purchase includes 12 months of updates from the date of purchase. After
+        12 months the version installed at that time will continue to work, but new
+        versions require renewal.
+      </p>
+
+      <h3>4. Acceptable use</h3>
+      <p>
+        You agree not to reverse engineer, tamper with, or attempt to forge license keys
+        for Todo Pilot, and not to use the extension for any unlawful purpose.
+      </p>
+
+      <h3>5. Disclaimer</h3>
+      <p>
+        Todo Pilot is provided "as is", without warranty of any kind. Green Spec is not
+        liable for any data loss, lost productivity, or other damages arising from use
+        of the extension.
+      </p>
+
+      <h3>6. Payments</h3>
+      <p>
+        Payments are processed by <strong>Paddle.com Market Limited</strong>, acting as
+        merchant of record. Paddle handles billing, taxes, invoices, fraud screening,
+        and chargebacks. Their terms also apply to the transaction.
+      </p>
+
+      <h3>7. Termination</h3>
+      <p>
+        We may revoke a license key in cases of fraud, chargeback abuse, or violation
+        of these terms. Lawful, ordinary use will not result in termination.
+      </p>
+
+      <h3>8. Governing law</h3>
+      <p>
+        These terms are governed by the laws applicable to Green Spec's place of
+        business. Any disputes will be resolved in that jurisdiction.
+      </p>
+    </div>
+  </section>
+
+  <!-- PRIVACY -->
+  <section id="privacy" class="legal">
+    <div class="wrap">
+      <h2>Privacy policy</h2>
+      <p><em>Last updated: 6 May 2026.</em></p>
+
+      <h3>1. What the extension collects</h3>
+      <p>
+        Todo Pilot collects <strong>nothing</strong>. The extension does not send
+        telemetry, analytics, crash reports, or usage data. Your tasks and code never
+        leave your machine.
+      </p>
+
+      <h3>2. What this website collects</h3>
+      <p>
+        This static website does not set tracking cookies and does not run analytics.
+        Standard server access logs may be retained by our hosting provider
+        (e.g. GitHub Pages) for security and abuse prevention.
+      </p>
+
+      <h3>3. What we collect at purchase</h3>
+      <p>
+        When you buy a license, our payment processor <strong>Paddle.com</strong>
+        collects the information required to process the transaction, such as your
+        email, billing address, and payment details. Paddle then shares with us:
+      </p>
+      <ul>
+        <li>your email address (so we can deliver the license key)</li>
+        <li>order ID and plan purchased</li>
+        <li>country (for tax reporting)</li>
+      </ul>
+      <p>
+        We use this information solely to deliver and support your license. We do not
+        sell or share it with third parties for marketing.
+      </p>
+
+      <h3>4. Data retention</h3>
+      <p>
+        We retain purchase records for as long as required by law (typically up to
+        7 years for tax purposes). You may request deletion of any non-required data
+        at any time by emailing us.
+      </p>
+
+      <h3>5. Your rights</h3>
+      <p>
+        You may request a copy of, or deletion of, the personal data we hold about
+        you by contacting <a href="mailto:sgreen.za@gmail.com">sgreen.za@gmail.com</a>.
+      </p>
+
+      <h3>6. Contact</h3>
+      <p>
+        Questions about this policy: <a href="mailto:sgreen.za@gmail.com">sgreen.za@gmail.com</a>.
+      </p>
+    </div>
+  </section>
+
+  <!-- CONTACT -->
+  <section id="contact">
+    <div class="wrap">
+      <h2>Contact</h2>
+      <p>
+        For sales, support, license issues, or anything else:
+        <a href="mailto:sgreen.za@gmail.com"><strong>sgreen.za@gmail.com</strong></a>.
+      </p>
+      <p class="muted">We aim to respond within 2 business days.</p>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <div>© <span id="year"></span> Green Spec. All rights reserved.</div>
+    <div style="margin-top:6px;">
+      <a href="#privacy">Privacy</a> ·
+      <a href="#terms">Terms</a> ·
+      <a href="#refunds">Refunds</a> ·
+      <a href="#contact">Contact</a> ·
+      <a href="https://github.com/ritesh-za/todo-pilot" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  document.getElementById('year').textContent = new Date().getFullYear();
+  // Replace these with your Paddle checkout URLs once generated.
+  // Until then, both buttons fall back to the contact section.
+  // Example after wiring Paddle:
+  //   document.getElementById('buy-pro').href  = "https://buy.paddle.com/checkout?items[0][priceId]=pri_XXXX_pro&items[0][quantity]=1";
+  //   document.getElementById('buy-team').href = "https://buy.paddle.com/checkout?items[0][priceId]=pri_XXXX_team&items[0][quantity]=1";
+</script>
+
+</body>
+</html>
